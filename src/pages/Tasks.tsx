@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '@/lib/api'
 import type { Employee, Task } from '@/lib/types'
 
@@ -119,7 +119,12 @@ export default function Tasks() {
           return (
             <li key={task.id} className="rounded-lg bg-white px-4 py-3 shadow">
               <div className="flex items-center justify-between">
-                <p className="font-medium">{task.title}</p>
+                <Link
+                  to={`/tasks/${task.id}`}
+                  className="font-medium text-blue-600 hover:underline"
+                >
+                  {task.title}
+                </Link>
                 {assignee && (
                   <span className="text-sm text-gray-500">{assignee}</span>
                 )}

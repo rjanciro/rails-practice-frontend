@@ -4,6 +4,7 @@ import Employees from '@/pages/Employees'
 import EmployeeDetail from '@/pages/EmployeeDetail'
 import Login from '@/pages/Login'
 import Tasks from '@/pages/Tasks'
+import TaskDetail from '@/pages/TaskDetail'
 
 const router = createBrowserRouter([
   {
@@ -14,6 +15,7 @@ const router = createBrowserRouter([
       { path: '/employees', element: <Employees /> },
       { path: '/employees/:id', element: <EmployeeDetail /> },
       { path: '/tasks', element: <Tasks /> },
+      { path: '/tasks/:id', element: <TaskDetail /> },
     ],
   },
 ])

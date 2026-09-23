@@ -158,7 +158,7 @@ export default function EmployeeDetail() {
           )}
 
           <h2 className="mt-6 mb-2 font-semibold">Tasks assigned</h2>
-          {employee.tasks.length === 0 ? (
+          {employee.tasks?.length === 0 ? (
             <p className="text-sm text-gray-500">No tasks assigned.</p>
           ) : (
             <ul className="space-y-2">

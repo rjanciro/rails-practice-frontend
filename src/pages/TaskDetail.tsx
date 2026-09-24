@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import EmployeeCheckboxList from '@/components/EmployeeCheckboxList'
 import { api, ApiError } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import type { Employee, Task } from '@/lib/types'
@@ -16,7 +17,7 @@ export default function TaskDetail() {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assigneeId, setAssigneeId] = useState('')
+  const [assigneeIds, setAssigneeIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -38,15 +39,11 @@ export default function TaskDetail() {
       .catch(() => {})
   }, [id, navigate])
 
-  const assignee = task?.employee_id
-    ? employees.find((employee) => employee.id === task.employee_id)
-    : null
-
   const startEditing = () => {
     if (!task) return
     setTitle(task.title)
     setDescription(task.description ?? '')
-    setAssigneeId(task.employee_id?.toString() ?? '')
+    setAssigneeIds(task.employees.map((employee) => employee.id))
     setError('')
     setEditing(true)
   }
@@ -63,7 +60,7 @@ export default function TaskDetail() {
           task: {
             title,
             description: description || null,
-            employee_id: assigneeId ? Number(assigneeId) : null,
+            employee_ids: assigneeIds,
           },
         }),
       })
@@ -84,6 +81,25 @@ export default function TaskDetail() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!task || !window.confirm(`Delete "${task.title}"?`)) return
+    setError('')
+    try {
+      await api<void>(`/tasks/${task.id}`, { method: 'DELETE' })
+      navigate('/tasks')
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        navigate('/login')
+        return
+      }
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? 'Admin access required.'
+          : 'Failed to delete task.',
+      )
+    }
+  }
+
   return (
     <div>
       <Link to="/tasks" className="text-sm text-blue-600 hover:underline">
@@ -101,13 +117,22 @@ export default function TaskDetail() {
           <div className="flex items-start justify-between">
             <h1 className="text-2xl font-bold">{task.title}</h1>
             {isAdmin && !editing && (
-              <button
-                type="button"
-                onClick={startEditing}
-                className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-              >
-                Edit
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={startEditing}
+                  className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="rounded bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
             )}
           </div>
 
@@ -139,22 +164,13 @@ export default function TaskDetail() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium" htmlFor="assigneeId">
-                  Assign to
-                </label>
-                <select
-                  id="assigneeId"
-                  value={assigneeId}
-                  onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full rounded border border-gray-300 px-3 py-2"
-                >
-                  <option value="">Unassigned</option>
-                  {employees.map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.full_name}
-                    </option>
-                  ))}
-                </select>
+                <p className="mb-1 block text-sm font-medium">Assign to</p>
+                <EmployeeCheckboxList
+                  employees={employees}
+                  selected={assigneeIds}
+                  onChange={setAssigneeIds}
+                  idPrefix="edit-task-employee"
+                />
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <div className="flex gap-2">
@@ -190,13 +206,19 @@ export default function TaskDetail() {
 
               <div className="mt-4">
                 <p className="text-sm text-gray-500">Assigned to</p>
-                {assignee ? (
-                  <Link
-                    to={`/employees/${assignee.id}`}
-                    className="mt-1 inline-block text-blue-600 hover:underline"
-                  >
-                    {assignee.full_name}
-                  </Link>
+                {task.employees.length > 0 ? (
+                  <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                    {task.employees.map((employee) => (
+                      <li key={employee.id}>
+                        <Link
+                          to={`/employees/${employee.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {employee.full_name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
                   <p className="mt-1 text-gray-700">No employee assigned yet.</p>
                 )}

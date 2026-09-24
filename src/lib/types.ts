@@ -5,15 +5,17 @@ export type Employee = {
   active: boolean
 }
 
+export type TaskEmployee = Pick<Employee, 'id' | 'full_name'>
+
 export type Task = {
   id: number
   title: string
   description: string | null
-  employee_id: number | null
+  employees: TaskEmployee[]
 }
 
 export type EmployeeDetail = Employee & {
-  tasks: Task[]
+  tasks: Pick<Task, 'id' | 'title' | 'description'>[]
 }
 
 export type User = {

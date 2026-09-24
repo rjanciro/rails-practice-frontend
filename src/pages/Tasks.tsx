@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import EmployeeCheckboxList from '@/components/EmployeeCheckboxList'
 import { api, ApiError } from '@/lib/api'
 import type { Employee, Task } from '@/lib/types'
 
@@ -10,7 +11,7 @@ export default function Tasks() {
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [employeeId, setEmployeeId] = useState('')
+  const [employeeIds, setEmployeeIds] = useState<number[]>([])
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -37,14 +38,14 @@ export default function Tasks() {
           task: {
             title,
             description: description || null,
-            employee_id: employeeId ? Number(employeeId) : null,
+            employee_ids: employeeIds,
           },
         }),
       })
       setTasks((prev) => [...prev, task])
       setTitle('')
       setDescription('')
-      setEmployeeId('')
+      setEmployeeIds([])
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         navigate('/login')
@@ -53,9 +54,6 @@ export default function Tasks() {
       setError('Failed to create task.')
     }
   }
-
-  const employeeName = (id: number | null) =>
-    id ? employees.find((employee) => employee.id === id)?.full_name : null
 
   return (
     <div>
@@ -88,22 +86,13 @@ export default function Tasks() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium" htmlFor="employeeId">
-            Assign to
-          </label>
-          <select
-            id="employeeId"
-            value={employeeId}
-            onChange={(e) => setEmployeeId(e.target.value)}
-            className="w-full rounded border border-gray-300 px-3 py-2"
-          >
-            <option value="">Unassigned</option>
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {employee.full_name}
-              </option>
-            ))}
-          </select>
+          <p className="mb-1 block text-sm font-medium">Assign to</p>
+          <EmployeeCheckboxList
+            employees={employees}
+            selected={employeeIds}
+            onChange={setEmployeeIds}
+            idPrefix="new-task-employee"
+          />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
@@ -115,18 +104,18 @@ export default function Tasks() {
       </form>
       <ul className="space-y-2">
         {tasks.map((task) => {
-          const assignee = employeeName(task.employee_id)
+          const assignees = task.employees.map((employee) => employee.full_name).join(', ')
           return (
             <li key={task.id} className="rounded-lg bg-white px-4 py-3 shadow">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <Link
                   to={`/tasks/${task.id}`}
                   className="font-medium text-blue-600 hover:underline"
                 >
                   {task.title}
                 </Link>
-                {assignee && (
-                  <span className="text-sm text-gray-500">{assignee}</span>
+                {assignees && (
+                  <span className="text-right text-sm text-gray-500">{assignees}</span>
                 )}
               </div>
               {task.description && (
